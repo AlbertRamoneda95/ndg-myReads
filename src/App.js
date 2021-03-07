@@ -1,7 +1,7 @@
 import React from 'react'
 // import * as BooksAPI from './BooksAPI'
 import './App.css'
-import {search} from "./BooksAPI"
+import {search, getAll, update} from "./BooksAPI"
 import BookShelf from "./Bookshelf"
 import Search from "./Search"
 import {
@@ -14,50 +14,31 @@ class BooksApp extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
-      currentlyReading: [
-        {
-          author: "J.K. Rowling",
-          title: "Harry Potter and the Half-Blood Prince",
-          url: "http://books.google.com/books/content?id=R7YsowJI9-IC&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api"
-        },
-        {
-          author: "Bonnie Eisenman",
-          title: "Learning React Native",
-          url: "http://books.google.com/books/content?id=274fCwAAQBAJ&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api"
-        }
-      ],
-      wantToRead:[
-        {
-          author: "Sean Liao",
-          title: "Migrating to Android for iOS Developers",
-          url: "http://books.google.com/books/content?id=D1EnCgAAQBAJ&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api"
-        },
-        {
-          author: "J.K. Rowling",
-          title: "Harry Potter and the Sorcerer's Stone",
-          url:"http://books.google.com/books/content?id=wrOQLV6xB-wC&printsec=frontcover&img=1&zoom=1&imgtk=AFLRE72G3gA5A-Ka8XjOZGDFLAoUeMQBqZ9y-LCspZ2dzJTugcOcJ4C7FP0tDA8s1h9f480ISXuvYhA_ZpdvRArUL-mZyD4WW7CHyEqHYq9D3kGnrZCNiqxSRhry8TiFDCMWP61ujflB&source=gbs_api"
-        },
-      ],
-      read: [   {
-        author: "Cassio de Sousa Antonio",
-        title: "Pro React",
-        url: "http://books.google.com/books/content?id=PKpPCwAAQBAJ&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api"
-      },
-      {
-        author: "Paul J. Ward",
-        title: "Android",
-        url: "http://books.google.com/books/content?id=xlp6NE2NWecC&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api"
-      },
-      {
-        author: "Charles A. Knight",
-        title: "The Literature of Satire",
-        url: "http://books.google.com/books/content?id=SOfVePSFctgC&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api"
-      },],
+      currentlyReading: [],
+      wantToRead:[],
+      read: [],
       bookResults:[],
       searchQuery:""
     }
   }
 
+
+  componentDidMount = (() => {
+    
+    getAll().then((results)=> {
+      results.map(bookEntry => {
+        var parsedBook= {
+          id:bookEntry.id,
+          author:bookEntry.authors ? bookEntry.authors[0]: "",
+          title:bookEntry.title,
+          url: bookEntry.imageLinks.thumbnail
+        };
+        this.setState(prevState => ({
+          [bookEntry.shelf]: [...prevState[bookEntry.shelf], parsedBook]
+        }));
+      });
+    })
+  });
   onBookMove = ((book, bookShelfOri,bookShelfDest) => {
     this.deleteBookFromOrigin(book, bookShelfOri);
     this.addBookToDestination(book, bookShelfDest);
@@ -76,9 +57,11 @@ class BooksApp extends React.Component {
   });
 
   addBookToDestination = ((book, destination) => {
-    this.setState(prevState => ({
-      [destination]: [...prevState[destination], book]
-    }));
+    update(book, destination).then(() => {
+      this.setState(prevState => ({
+        [destination]: [...prevState[destination], book]
+      }));
+    });
   });
 
   onLiveChange = (newValue) => {
@@ -90,9 +73,10 @@ class BooksApp extends React.Component {
       if (results && results.length) {
         results.map(bookEntry => {
           parsedResults.push({
+            id:bookEntry.id,
             author:bookEntry.authors ? bookEntry.authors[0]: "",
             title:bookEntry.title,
-            url: bookEntry.imageLinks.thumbnail
+            url:  bookEntry.imageLinks ? bookEntry.imageLinks.thumbnail : ""
           });
   
         });
